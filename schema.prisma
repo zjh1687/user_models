@@ -212,3 +212,5 @@ model rs_note {
   @@index([not_relate_post_idx], name: "relate_post_idx_foreignKeys")
   @@index([not_send_id], name: "send_id_foreignKey")
 }
+
+//asdasd
