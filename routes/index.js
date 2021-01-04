@@ -18,7 +18,7 @@ const { profile, error } = require('console');
 
 // moment().format('YYYY-MM-DD HH:mm:ss')
 
-//asdasdasdasd
+
 
 
 /* GET home page. */
@@ -32,7 +32,12 @@ router.post('/', async function(req, res, next) {
   const{title, pass, name, email} = req.body
   const user_create = await Member_Models.createUser(title, pass, name, email);
   console.log(user_create);
-  res.send("end");
+  if (user_create.successful === false) {
+    res.send('오류발생')
+  }else{
+    res.send('회원가입 완료')
+  }
+  
 });
 
 //회원정보 등록시 중복성 검사
@@ -41,7 +46,7 @@ router.post('/check', async function(req, res, next){
   
   const user_check = await Member_Models.checkIsEmail(email);
   console.log(user_check);
-  if(user_check.data == null){
+  if(user_check.successful === false){
     res.json('이메일을 사용할 수 있습니다.')
   } else {
     res.json('이메일이 중복되었습니다.')
@@ -53,8 +58,13 @@ router.post('/delete', async function(req, res, next) {
   const {idx} = req.body
   const user_delete = await Member_Models.deleteUser(idx);
   console.log(user_delete);
-  console.log(req.body)
-  res.send("end");
+  if(user_delete.successful === false){
+    res.send ("없는 아이디 입니다.")
+    return MSG.onError(12001)
+  }else{
+    res.send("아이디가 삭제되었습니다.")
+    return MSG.onSuccess(200)
+  }
 });
 
 
@@ -63,25 +73,28 @@ router.post('/update', async function(req, res, next) {
   const{userid, updateid} = req.body
   const user_update = await Member_Models.updateUser(userid, updateid)
   console.log(user_update);
-  console.log(req.body)
-  res.render("end");
+  if(user_update.successful === false){
+    res.send ("변경 불가능")
+    return MSG.onError(12001)
+  }else{
+    res.send("변경 완료")
+    return MSG.onSuccess(200)
+  }
 });
 
-//회원 정보 수정과 추가 upsert 
-router.post('/upsert', async function(req, res, next) {
-  const {updatename, id}= req.body
-  const user_upsert = await Member_Models.upsetUser(id,updatename)
-  console.log(user_upsert);
-  console.log(req.body)
-  res.render("end");
-});
 
 //관리자 권한 부여(admin)
 router.post('/admin', async function(req, res, next){
   const{email}= req.body
   const user_admin = await Member_Models.setAdmin(email)
   console.log(user_admin);
-  res.render("end");
+  if(user_admin.successful === false){
+    res.send ("변경 불가능")
+    return MSG.onError(12001)
+  }else{
+    res.send("변경 완료")
+    return MSG.onSuccess(200)
+  }
 })
 
 
@@ -90,6 +103,7 @@ router.post('/login', async function(req, res, next) {
   const {email, pass} = req.body
   const user_data = await Member_Models.loginUser(email, pass)
   // 이메일 없을시
+  console.log(user_data);
   if(user_data.data === null){
       let temp = {
         'Code' : '200',
