@@ -24,7 +24,7 @@ const { profile, error } = require('console');
 /* GET home page. */
 router.get('/', function(req, res, next) {
   console.log(req.query),
-  res.send(req.query);
+  res.send("김승철");
 });
 
  // 신규 회원등록 (비밀번호 sha256으로 비밀번호와 이메일 같이 암호화)
