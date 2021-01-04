@@ -1,0 +1,214 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = "mysql://dbmasteruser:angksehwjsqq@ls-712a3de0f216372c332622b5ed5c6f22fe2f67bd.cu0xyssgzj43.ap-northeast-2.rds.amazonaws.com:3306/bs_test?schema=public"
+}
+
+model test {
+  test_idx      Int    @id @default(autoincrement())
+  test_value    String
+  test_deletion Int    @default(0)
+
+  @@unique([test_value, test_deletion], name: "test_value_deletion_unique")
+}
+
+model board_cate {
+  tca_idx    Int          @id @default(autoincrement())
+  tca_title  String
+  board_post board_post[]
+}
+
+model board_post {
+  bpo_idx     Int        @id @default(autoincrement())
+  bpo_bca_idx Int
+  bpo_title   String
+  bpo_desc    String
+  board_cate  board_cate @relation(fields: [bpo_bca_idx], references: [tca_idx])
+
+  @@index([bpo_bca_idx], name: "bpo_bca_idx_forienKeys")
+}
+
+model rs_member {
+  mem_idx                                Int           @id @default(autoincrement())
+  mem_userid                             String        @default("")
+  mem_userpw                             String        @default("")
+  mem_username                           String        @unique @default("")
+  mem_email                              String        @unique @default("")
+  mem_lastlogin_datetime                 String
+  mem_lastlogin_timestamp                Int
+  mem_inactive_check                     String?
+  mem_is_admin                           Int           @default(0)
+  rs_mem_auth                            rs_mem_auth[]
+  rs_note_rs_memberTors_note_not_recv_id rs_note[]     @relation("rs_memberTors_note_not_recv_id")
+  rs_note_rs_memberTors_note_not_send_id rs_note[]     @relation("rs_memberTors_note_not_send_id")
+
+  @@index([mem_idx, mem_email], name: "mem_idx")
+  @@index([mem_userid], name: "mem_userid")
+}
+
+model rs_mem_login_log {
+  mll_idx        Int    @id @default(autoincrement())
+  mll_success    Int
+  mll_mem_idx    Int    @default(0)
+  mll_email      String @default("")
+  mll_datetime   String
+  mll_reason     String @default("")
+  mll_timestamp  Int?
+  mll_ip         String
+  mll_fail_count Int    @default(0)
+}
+
+model rs_mgr {
+  mgr_id        Int    @id
+  mgr_title     String
+  mgr_datetime  String
+  mgr_timestemp Int
+}
+
+model rs_mgr_mem {
+  mgm_mgr_idx   Int
+  mgm_mem_idx   Int
+  mgm_datetime  String
+  mgm_timestemp Int
+
+  @@id([mgm_mgr_idx, mgm_mem_idx])
+  @@index([mgm_mem_idx], name: "mgm_mem_id_foreignKey")
+  @@index([mgm_mgr_idx], name: "mgm_mgr_id_foreignKey")
+}
+
+model rs_point_log {
+  poi_mem_idx   Int     @default(autoincrement())
+  poi_mem_id    Int
+  poi_inc_poi   String
+  poi_type      String?
+  poi_datetime  String
+  poi_timestemp Int
+
+  @@id([poi_mem_idx, poi_mem_id])
+}
+
+model rs_point {
+  idx           Int    @default(autoincrement())
+  poi_mem_id    Int
+  poi_point     Int
+  poi_datetime  String
+  poi_timestemp Int
+
+  @@id([idx, poi_mem_id])
+  @@index([poi_mem_id], name: "poi_acl_id_foreignKey")
+}
+
+model rs_mem_auth {
+  auth_idx      Int       @id @default(autoincrement())
+  auth_email    String    @default("")
+  authNumber    Int
+  auth_datetime String
+  rs_member     rs_member @relation(fields: [auth_email], references: [mem_email])
+
+  @@index([auth_email], name: "foreign_mem_email")
+}
+
+model rs_board_category {
+  cat_idx   Int    @id
+  cat_title String
+}
+
+model rs_board_post {
+  pst_idx              Int                    @unique @default(autoincrement())
+  pst_title            String
+  pst_content          String
+  pst_pass             String?
+  pst_create_datetime  String
+  pst_create_timestemp Int
+  pst_update_datetime  String
+  pst_update_timestemp Int
+  pst_hit              Int
+  pst_cat_idx          Int
+  pst_mem_idx          Int
+  pst_mem_id           String
+  pst_mem_nick         String
+  rs_board_likebad_map rs_board_likebad_map[]
+
+  @@id([pst_idx, pst_mem_idx])
+  @@index([pst_cat_idx], name: "pst_cat_idx_foreignKey")
+  @@index([pst_mem_id], name: "pst_mem_id")
+  @@index([pst_mem_idx], name: "pst_mem_idx")
+}
+
+model rs_board_comment {
+  cmt_idx              Int                    @default(autoincrement())
+  cmt_content          String
+  cmt_mem_idx          Int
+  cmt_mem_id           String
+  cmt_mem_nick         String
+  cmt_pass             Int?
+  cmt_create_datetime  String
+  cmt_create_timestemp Int
+  cmt_update_datetime  String
+  cmt_update_timestemp Int
+  rs_board_likebad_map rs_board_likebad_map[]
+
+  @@id([cmt_idx, cmt_mem_idx])
+  @@index([cmt_idx], name: "cmt_idx")
+}
+
+model rs_mem_token {
+  mtk_idx     Int    @id @default(autoincrement())
+  mtk_refresh String
+  mtk_email   String
+}
+
+model rs_board_admin {
+  adm_idx     Int    @id @default(autoincrement())
+  adm_mem_idx Int
+  adm_mem_id  String
+
+  @@index([adm_mem_idx], name: "adm_mem_idx_foreignKey")
+}
+
+model rs_board_likebad_log {
+  log_idx              Int    @id @default(autoincrement())
+  log_cnt_like         Int?
+  log_cnt_bad          Int?
+  log_update_datetime  String
+  log_update_timestemp Int
+}
+
+model rs_board_likebad_map {
+  blm_idx              Int               @id @default(autoincrement())
+  blm_user_idx         Int
+  blm_post_idx         Int?
+  blm_cmt_idx          Int?
+  blm_update_timestemp Int
+  blm_update_datetime  String
+  blm_cnt_like         Int?
+  blm_cnt_bad          Int?
+  rs_board_comment     rs_board_comment? @relation(fields: [blm_cmt_idx], references: [cmt_idx])
+  rs_board_post        rs_board_post?    @relation(fields: [blm_post_idx], references: [pst_idx])
+
+  @@index([blm_cmt_idx], name: "blm_cmt_idx_foreignKey")
+  @@index([blm_post_idx], name: "blm_post_idx_foreignKey")
+  @@index([blm_user_idx], name: "blm_user_idx_foreignKey")
+}
+
+model rs_note {
+  not_idx                                  Int        @unique @default(autoincrement())
+  not_recv_id                              Int?
+  not_send_id                              Int?
+  not_type                                 Int
+  not_title                                String
+  not_relate_post_idx                      Int
+  not_content                              String
+  not_datetime                             String
+  not_timestemp                            Int
+  rs_member_rs_memberTors_note_not_recv_id rs_member? @relation("rs_memberTors_note_not_recv_id", fields: [not_recv_id], references: [mem_idx])
+  rs_member_rs_memberTors_note_not_send_id rs_member? @relation("rs_memberTors_note_not_send_id", fields: [not_send_id], references: [mem_idx])
+
+  @@id([not_idx, not_relate_post_idx])
+  @@index([not_recv_id], name: "recv_id_foreignKey")
+  @@index([not_relate_post_idx], name: "relate_post_idx_foreignKeys")
+  @@index([not_send_id], name: "send_id_foreignKey")
+}
