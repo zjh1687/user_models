@@ -1,0 +1,30 @@
+{
+  "name": "test",
+  "version": "0.0.0",
+  "private": true,
+  "scripts": {
+    "start": "node ./bin/www"
+  },
+  "dependencies": {
+    "@prisma/cli": "^2.13.0",
+    "@prisma/client": "^2.13.0",
+    "cookie-parser": "~1.4.4",
+    "debug": "~2.6.9",
+    "ejs": "^2.6.2",
+    "express": "~4.16.1",
+    "http-errors": "~1.6.3",
+    "internal-ip": "^6.2.0",
+    "ip": "^1.1.5",
+    "ipaddr.js": "^2.0.0",
+    "jsonwebtoken": "^8.5.1",
+    "moment": "^2.29.1",
+    "morgan": "~1.9.1",
+    "node-cron": "^2.0.3",
+    "nodemailer": "^6.4.17",
+    "passport": "^0.4.1",
+    "passport-kakao": "^1.0.0",
+    "path": "^0.12.7",
+    "sha256": "^0.2.0",
+    "validator": "^13.5.2"
+  }
+}
