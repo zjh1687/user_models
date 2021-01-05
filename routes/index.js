@@ -15,6 +15,7 @@ const { connect } = require('http2');
 const passport = require('passport')
 const KakaoStrategy = require('passport-kakao').Strategy;
 const { profile, error } = require('console');
+const { fail } = require('assert');
 
 // moment().format('YYYY-MM-DD HH:mm:ss')
 
@@ -56,14 +57,22 @@ router.post('/check', async function(req, res, next){
 //회원 정보 삭제 delete 
 router.post('/delete', async function(req, res, next) {
   const {idx} = req.body
-  const user_delete = await Member_Models.deleteUser(idx);
-  console.log(user_delete);
-  if(user_delete.successful === false){
-    res.send ("없는 아이디 입니다.")
-    return MSG.onError(12001)
+  const accesstoken = req.headers.token
+  const verify_access = await Token_Models.verify_access(accesstoken);
+  if(verify_access.successful === false){
+    console.log(verify_access);
+    res.send('토큰 오류')
   }else{
-    res.send("아이디가 삭제되었습니다.")
-    return MSG.onSuccess(200)
+    const user_delete = await Member_Models.deleteUser(idx);
+    console.log(user_delete);
+    console.log(verify_access);
+    if(user_delete.successful === false){
+      res.send ("없는 아이디 입니다.")
+      return MSG.onError(12001)
+    }else{
+      res.send("아이디가 삭제되었습니다.")
+      return MSG.onSuccess(200)
+    }
   }
 });
 
@@ -71,14 +80,22 @@ router.post('/delete', async function(req, res, next) {
 //회원 정보 수정 update 
 router.post('/update', async function(req, res, next) {
   const{userid, updateid} = req.body
-  const user_update = await Member_Models.updateUser(userid, updateid)
-  console.log(user_update);
-  if(user_update.successful === false){
-    res.send ("변경 불가능")
-    return MSG.onError(12001)
+  const accesstoken = req.headers.token
+  const verify_access = await Token_Models.verify_access(accesstoken);
+
+  if(verify_access.successful === false){
+    console.log(verify_access);
+    res.send('토큰 오류')
   }else{
-    res.send("변경 완료")
-    return MSG.onSuccess(200)
+    const user_update = await Member_Models.updateUser(userid, updateid)
+    console.log(user_update);
+    if(user_update.successful === false){
+      res.send ("중복된 아이디 입니다.")
+      return MSG.onError(12001)
+    }else{
+      res.send("변경 완료")
+      return MSG.onSuccess(200)
+    }
   }
 });
 
@@ -86,14 +103,21 @@ router.post('/update', async function(req, res, next) {
 //관리자 권한 부여(admin)
 router.post('/admin', async function(req, res, next){
   const{email}= req.body
-  const user_admin = await Member_Models.setAdmin(email)
-  console.log(user_admin);
-  if(user_admin.successful === false){
-    res.send ("변경 불가능")
-    return MSG.onError(12001)
+  const accesstoken = req.headers.token
+  const verify_access = await Token_Models.verify_access(accesstoken);
+  if(verify_access.successful === false){
+    console.log(verify_access);
+    res.send('토큰 오류')
   }else{
-    res.send("변경 완료")
-    return MSG.onSuccess(200)
+    const user_admin = await Member_Models.setAdmin(email)
+    console.log(user_admin);
+    if(user_admin.successful === false){
+      res.send ("변경 불가능")
+      return MSG.onError(12001)
+    }else{
+      res.send("변경 완료")
+      return MSG.onSuccess(200)
+    }
   }
 })
 
@@ -104,7 +128,7 @@ router.post('/login', async function(req, res, next) {
   const user_data = await Member_Models.loginUser(email, pass)
   // 이메일 없을시
   console.log(user_data);
-  if(user_data.data === null){
+  if(user_data.successful===false){
       let temp = {
         'Code' : '200',
         'MSG' : "아이디가 일치하지 않습니다." 
@@ -115,13 +139,16 @@ router.post('/login', async function(req, res, next) {
   }
   // 로그인 횟수 초과 검증
   const login_fail_count = await Member_Models.getLoginFailedCount(email)
+  if(login_fail_count === false){
+    res.json('로그인 횟수 오류')
+  }
   if(login_fail_count.data >= 10){
       let temp1 = {
         'Code' : '200',
         'MSG' : "로그인횟수 초과." 
         }
       res.json(temp1);
-    return;
+      
     }
 
 //비밀번호를 대조
@@ -132,6 +159,10 @@ router.post('/login', async function(req, res, next) {
       const {mem_idx} = user_data.data;
       const {mem_email} = user_data.data;
       const user_login_fail = await Member_Models.failLoginLog(mem_email, mem_idx)
+      if(user_login_fail.successful === false){
+        res.send('로그 생성 오류')
+        return MSG.onError(99999)
+      }
       console.log(user_login_fail);
       let temp = {
           'Code' : '200',
@@ -144,6 +175,10 @@ router.post('/login', async function(req, res, next) {
         const {mem_idx} = user_data.data;
         const {mem_email} = user_data.data;
         const user_login_success = await Member_Models.successLoginLog(mem_email,mem_idx)
+        if(user_login_success.successful === false){
+          res.send('로그 생성 오류')
+          return MSG.onError(99999)
+        }
         console.log(user_login_success);
         let temp = {
           'Code' : '200',
@@ -163,7 +198,7 @@ router.post('/login', async function(req, res, next) {
 router.post('/findid', async function(req, res, next){
   const {username} = req.body
   const user_findid = await Member_Models.findUser(username)
-if (user_findid.data == null) {
+if (user_findid.successful === false) {
   res.json('닉네임이 없습니다.')
 }else{
     const {mem_email} = user_findid.data;
@@ -175,7 +210,11 @@ if (user_findid.data == null) {
 router.post('/findpass', async function(req, res, next){
   const {email} = req.body
   const user_findpass = await Member_Models.checkIsEmail(email)
-  if (user_findpass.data !== null) {
+  if (user_findpass.successful === false) {
+    res.json('이메일이 없습니다.');
+    return;
+  }
+
     let authNum = Math.random().toString().substr(2,6);
     let emailTemplete;
     
@@ -191,8 +230,8 @@ router.post('/findpass', async function(req, res, next){
     host: 'smtp.gmail.com',
     secure: false,
     auth: {
-        user: 'kimscaaaa2@gmail.com',
-        pass: 'rlatmdcjf1!',
+        user: 'rsteam.test2@gmail.com',
+        pass: 'rs00mk@@',
     },
   });
 
@@ -212,14 +251,20 @@ router.post('/findpass', async function(req, res, next){
     res.send(authNum);
     transporter.close()
   });
+
   const auth_check = await Member_Models.saveAuthNumber(email,authNum)
+  if(auth_check.successful === false){
+    res.send('오류 다시 시도하세요')
+    console.log(auth_check)
+  }
 
 // 1분뒤 저장된 인증번호 삭제
   const authcheckTime = setTimeout(() => {
   const authdelete =  Member_Models.deleteAuthNumber(authNum)
   }, 1 * 60 * 1000);
-  }else{
-    res.json('이메일이 없습니다.')
+  if(authdelete.successful === false){
+    console.log("인증번호 삭제 오류")
+    return MSG.onError(99999)
   }
 })
 // console.log(moment().format('x'))
@@ -230,7 +275,7 @@ router.post('/authcheck', async function(req, res, next){
 const {authnumber} = req.body
 const authcheck = await Member_Models.getAuthNumber(authnumber)
 console.log(authcheck)
-if (authcheck.data == 0) {
+if (authcheck.successful === false) {
   res.json('인증번호가 다릅니다.')
 }else{
   const{auth_email} = authcheck.data[0]
@@ -243,7 +288,11 @@ if (authcheck.data == 0) {
 router.post('/logout', async function(req, res ,next){
   const {email} = req.body
   const user_logout = await Member_Models.logoutUser(email)
-  res.json('로그아웃 되었습니다.')
+  if(user_logout.successful === false){
+    res.json('로그아웃 오류 다시 시도하세요')
+  }else{
+    res.json('로그아웃 되었습니다.')
+  }
 })
 
 
