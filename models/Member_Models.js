@@ -4,7 +4,6 @@ const MSG = require("./Messages_Models");
 var sha256 = require('sha256');
 var moment = require('moment');
 var ip = require("ip");
-const { onSuccess } = require("./Messages_Models");
 
 
 
@@ -21,7 +20,14 @@ class Test {
                 }
             })
         );
-        return result;
+        if(result.successful === true){
+            console.log(result);
+            if(result.data === null){
+                return MSG.onError(99999)
+            }else{
+                return result;
+            }
+        }
     }
 //  회원 가입
     async createUser(title, pass, name, email){
@@ -37,33 +43,54 @@ class Test {
                 }
             })
         );
-        return result;
+        if(result.successful === false){
+            console.log(result);
+            return MSG.onError(99999)
+        } else {
+            return MSG.onSuccess(200)
+        }
     }
 
 // 아이디 삭제
     async deleteUser(idx){
         const result = await run_prisma(
-            prisma.rs_member.deleteMany({
+            prisma.rs_member.delete({
                 where:{
                     mem_idx:Number(idx)
                 }
             })
         );
-        return result;
+        if(result.successful === false){
+            console.log(result);
+            return MSG.onError(99999)
+        } else {
+            return MSG.onSuccess(200)
+        }
     }
 // 아이디 수정
     async updateUser(userid, updateid){ 
         const result = await run_prisma(
             prisma.rs_member.updateMany({
                 where:{
-                    mem_userid:userid
+                    mem_username:userid
                 },
                 data:{
-                    mem_email:updateid
+                    mem_username:updateid
                 },
             })
         );
-        return result;
+        if(result.successful === false){
+            console.log(result);
+            return MSG.onError(99999)
+        }else{
+            if(result.data.count === 0 ){
+                console.log(result);
+                return MSG.onError(99999)
+            }else {
+                console.log(result);
+                return MSG.onSuccess(200)
+            }
+        }
     }
 // 관리자 권한 부여
     async setAdmin(email){
@@ -77,26 +104,18 @@ class Test {
                 }
             })
         );
-        return result;
+        if(result.successful ===true){
+            if(result.data.count === 0 ){
+                console.log(result);
+                return MSG.onError(99999)
+            }else {
+                console.log(result);
+                return MSG.onSuccess(200)
+            }
+        }
     }
     
-// 이름 추가 혹은 수정
-    async upsetUser(id, updatename){
-        const result = await run_prisma(
-            prisma.rs_member.upsert({
-                where:{
-                    mem_idx:Number(id)
-                },
-                update:{
-                    mem_username:updatename
-                },
-                create:{
-                    mem_username:updatename
-                }
-            })
-        );
-        return result;
-    }
+
 // 로그인 (이메일 대조)
     async loginUser(email, pass){
         const result = await run_prisma(
@@ -106,7 +125,14 @@ class Test {
                 },
             })
         )
-        return result
+        if(result.successful === true){
+            console.log(result);
+            if(result.data === null){
+                return MSG.onError(99999)
+            }else{
+                return result;
+            }
+        }
     }        
 // 로그인 실패시
     async failLoginLog(mem_email,mem_idx){
@@ -123,7 +149,12 @@ class Test {
                 }
             })
         )
-        return result;
+        if(result.successful === false){
+            console.log(result);
+            return MSG.onError(99999)
+        } else {
+            return MSG.onSuccess(200)
+        }
     }
 // 로그인 성공시 (토큰 생성)
     async successLoginLog(mem_email, mem_idx){
@@ -139,9 +170,22 @@ class Test {
                     mll_ip: ip.address()
                 }
             })
-            );
-            const accessToken = await Token_Models.generateAccessToken({mem_idx})
+        )
+        if(result.successful === false){
+            console.log(result);
+            return MSG.onError(99999)
+        }
+            const accessToken = await Token_Models.generateAccessToken({mem_idx},null , 999999)
+                if(accessToken.successful === false){
+                    console.log(accessToken);
+                    return MSG.onError(99999)
+                }
             const refreshToken = await Token_Models.generateRefreshToken({mem_idx})
+                if(refreshToken.successful === false){
+                    console.log(refreshToken);
+                    return MSG.onError(99999)
+                }
+            console.log("-------", accessToken , refreshToken);
 // 로그인 성공시 최근 로그인기록 업데이트
             const result1 = await run_prisma(
                 prisma.rs_member.updateMany({
@@ -153,8 +197,13 @@ class Test {
                         mem_lastlogin_timestamp:moment().unix()
                     }
                 })
-                
             )
+            if(result1.successful ===true){
+                if(result1.data.count === 0 ){
+                    console.log(result1);
+                    return MSG.onError(99999)
+                }                                                                    4
+            }
 // 로그인 성공 시 토큰 저장 (refreshtoken)
             const result2 = await run_prisma(
             prisma.rs_mem_token.create({
@@ -164,9 +213,14 @@ class Test {
                 }
             })
         )
-        console.log("-------", accessToken , refreshToken);
-          // res.json({Tokencreate});
-        return result;
+        if(result2.successful === false){
+            console.log(result2);
+            return MSG.onError(99999)
+        } else {
+            console.log("----" ,result2)
+            return MSG.onSuccess(200)
+        }
+        
     }
 
 // 아이디 찾기
@@ -178,10 +232,15 @@ class Test {
                 }
             })
         )
-        return result;
+        if(result.successful === true){
+            console.log(result);
+            if(result.data === null){
+                return MSG.onError(99999)
+            }else{
+                return result;
+            }
+        }
     }
-
-    
 
     // 로그인 실패시 카운트
     async failCount (mem_email){
@@ -197,7 +256,15 @@ class Test {
                 }
             })
         )
-        return result;
+        if(result.successful ===true){
+            if(result.data.count === 0 ){
+                console.log(result);
+                return MSG.onError(99999)
+            }else {
+                console.log(result);
+                return MSG.onSuccess(200)
+            }
+        }
     }
 
         // 로그인 실패 카운트 
@@ -214,7 +281,7 @@ class Test {
             )
             if(result.successful === false){
                 console.log(result)
-                return MSG.onError(99999)
+                return result
             }
             let loginFailedCount = 0;
             for(const _loginLog of result.data){
@@ -232,11 +299,7 @@ class Test {
         const result = await run_prisma(
             prisma.rs_mem_auth.create({
                 data:{
-                    rs_member:{
-                    connect:{
-                        mem_email: email
-                        }
-                    },
+                    auth_email: email,
                     authNumber:Number(authNum),
                     auth_datetime:moment().format('YYYY-MM-DD HH:mm:ss')
                 }
@@ -254,7 +317,15 @@ class Test {
                 }
             })
         )
-        return;
+        if(result.successful ===true){
+            if(result.data.count === 0 ){
+                console.log(result);
+                return MSG.onError(99999)
+            }else {
+                console.log(result);
+                return MSG.onSuccess(200)
+            }
+        }
     }
 
     //인증번호 가져오기
@@ -266,7 +337,12 @@ class Test {
                 }
             })
         )
-        return result;
+        if(result.successful === false){
+            console.log(result)
+            return result
+        }else{
+            return MSG.onSuccess(200)
+        }
     }
 
     // 비밀번호 초기화 
@@ -281,7 +357,15 @@ class Test {
                 }
             })
         )
-        return ;
+        if(result.successful ===true){
+            if(result.data.count === 0 ){
+                console.log(result);
+                return MSG.onError(99999)
+            }else {
+                console.log(result);
+                return MSG.onSuccess(200)
+            }
+        }
     }
     // 로그아웃(refresh token 삭제)
     async logoutUser(email){
@@ -292,6 +376,15 @@ class Test {
                 }
             })
         )
+        if(result.successful ===true){
+            if(result.data.count === 0 ){
+                console.log(result);
+                return MSG.onError(99999)
+            }else {
+                console.log(result);
+                return MSG.onSuccess(200)
+            }
+        }
     }
 }
 

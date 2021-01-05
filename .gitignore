@@ -1,3 +1,7 @@
 schema.prisma
 node_modules/.prisma/client/schema.prisma
+<<<<<<< HEAD
 
+=======
+node_modules/.prisma/client/schema.prisma
+>>>>>>> hotfix
