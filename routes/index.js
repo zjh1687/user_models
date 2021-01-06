@@ -30,8 +30,8 @@ router.get('/', function(req, res, next) {
 
  // 신규 회원등록 (비밀번호 sha256으로 비밀번호와 이메일 같이 암호화)
 router.post('/', async function(req, res, next) {
-  const{title, pass, name, email} = req.body
-  const user_create = await Member_Models.createUser(title, pass, name, email);
+  const{userid, pass, email} = req.body
+  const user_create = await Member_Models.createUser(userid, pass, email);
   console.log(user_create);
   if (user_create.successful === false) {
     res.send('오류발생')
@@ -53,74 +53,6 @@ router.post('/check', async function(req, res, next){
     res.json('이메일이 중복되었습니다.')
   }
 });
-
-//회원 정보 삭제 delete 
-router.post('/delete', async function(req, res, next) {
-  const {idx} = req.body
-  const accesstoken = req.headers.token
-  const verify_access = await Token_Models.verify_access(accesstoken);
-  if(verify_access.successful === false){
-    console.log(verify_access);
-    res.send('토큰 오류')
-  }else{
-    const user_delete = await Member_Models.deleteUser(idx);
-    console.log(user_delete);
-    console.log(verify_access);
-    if(user_delete.successful === false){
-      res.send ("없는 아이디 입니다.")
-      return MSG.onError(12001)
-    }else{
-      res.send("아이디가 삭제되었습니다.")
-      return MSG.onSuccess(200)
-    }
-  }
-});
-
-
-//회원 정보 수정 update 
-router.post('/update', async function(req, res, next) {
-  const{userid, updateid} = req.body
-  const accesstoken = req.headers.token
-  const verify_access = await Token_Models.verify_access(accesstoken);
-
-  if(verify_access.successful === false){
-    console.log(verify_access);
-    res.send('토큰 오류')
-  }else{
-    const user_update = await Member_Models.updateUser(userid, updateid)
-    console.log(user_update);
-    if(user_update.successful === false){
-      res.send ("중복된 아이디 입니다.")
-      return MSG.onError(12001)
-    }else{
-      res.send("변경 완료")
-      return MSG.onSuccess(200)
-    }
-  }
-});
-
-
-//관리자 권한 부여(admin)
-router.post('/admin', async function(req, res, next){
-  const{email}= req.body
-  const accesstoken = req.headers.token
-  const verify_access = await Token_Models.verify_access(accesstoken);
-  if(verify_access.successful === false){
-    console.log(verify_access);
-    res.send('토큰 오류')
-  }else{
-    const user_admin = await Member_Models.setAdmin(email)
-    console.log(user_admin);
-    if(user_admin.successful === false){
-      res.send ("변경 불가능")
-      return MSG.onError(12001)
-    }else{
-      res.send("변경 완료")
-      return MSG.onSuccess(200)
-    }
-  }
-})
-
 
 //로그인 로직 
 router.post('/login', async function(req, res, next) {
@@ -150,7 +82,6 @@ router.post('/login', async function(req, res, next) {
       res.json(temp1);
       
     }
-
 //비밀번호를 대조
   const {mem_userpw} = user_data.data;
   console.log(user_data.data);
@@ -196,8 +127,8 @@ router.post('/login', async function(req, res, next) {
 
 //회원정보 찾기(ID)
 router.post('/findid', async function(req, res, next){
-  const {username} = req.body
-  const user_findid = await Member_Models.findUser(username)
+  const {userid} = req.body
+  const user_findid = await Member_Models.findUser(userid)
 if (user_findid.successful === false) {
   res.json('닉네임이 없습니다.')
 }else{
@@ -295,6 +226,86 @@ router.post('/logout', async function(req, res ,next){
   }
 })
 
+//회원 정보 삭제 delete 
+router.use(token_verify);
+router.post('/delete', async function(req, res, next) {
+  const {idx} = req.body
+  const tokendata = req.tokeninfo
+  console.log(tokendata)
+  const user_delete = await Member_Models.deleteUser(idx);
+  console.log(user_delete);
+  console.log(verify_access);
+  if(user_delete.successful === false){
+    res.send ("없는 아이디 입니다.")
+    return MSG.onError(12001)
+  }else{
+    res.send("아이디가 삭제되었습니다.")
+    return MSG.onSuccess(200)
+  }
+});
+
+
+//회원 정보 수정 update 
+router.use(token_verify);
+router.post('/update', async function(req, res, next) {
+  const{userid, updateid} = req.body
+  const tokendata = req.tokeninfo
+  console.log(tokendata)
+  const user_update = await Member_Models.updateUser(userid, updateid)
+  console.log(user_update);
+  if(user_update.successful === false){
+    res.send ("중복된 아이디 입니다.")
+    return MSG.onError(12001)
+  }else{
+    res.send("변경 완료")
+    return MSG.onSuccess(200)
+  }
+
+});
+
+
+//관리자 권한 부여(admin)
+router.post('/admin', async function(req, res, next){
+  const{adminemail,email}= req.body
+  const tokendata = req.tokeninfo
+  console.log(tokendata)
+  const find_admin = await Member_Models.checkIsEmail(adminemail)
+  if(find_admin.successful === false){
+    console.log(find_admin)
+    res.send('권한유저 없음')
+    return MSG.onError(99999)
+  }
+  const {mem_is_admin}= find_admin.data
+  if(mem_is_admin === 0 ){
+    console.log(mem_is_admin)
+    res.send('권한 없음')
+    return MSG.onError(99999)
+  }
+  const set_admin = await Member_Models.setAdmin(email)
+  console.log(set_admin);
+  if(set_admin.successful === false){
+    res.send ("변경 불가능")
+    return MSG.onError(12001)
+  }else{
+    res.send("변경 완료")
+    return MSG.onSuccess(200)
+  }
+
+})
+
+/*
+  const result = await run_prisma(prisma.test2.findUnique({
+    where:{
+      test_unique_test_deletion_unique:{
+        test_unique: "ㅅㄷㄴ",
+        test_deletion: 0
+      }
+    }
+  }))
+  console.log(result)
+  return;
+*/
+
 
 
 
@@ -328,5 +339,18 @@ router.get('/kakao/logout', passport.authenticate('kakao'));
 
 
 
+
+
+async function token_verify(req, res, next) {
+  const accesstoken = req.headers.token
+  const Token = await Token_Models.verify_access(accesstoken);
+  if (Token.successful === false) {
+      res.json("토큰 오류 재로그인 바람");
+      return;
+  } else {
+      req.tokeninfo = Token.data;
+      return next();
+  }
+}
 
 module.exports = router;

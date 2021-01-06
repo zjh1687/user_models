@@ -30,13 +30,12 @@ class Test {
         }
     }
 //  회원 가입
-    async createUser(title, pass, name, email){
+    async createUser(userid, pass, email){
         const result = await run_prisma(
             prisma.rs_member.create({
                 data:{
-                    mem_userid:title,
+                    mem_userid:userid,
                     mem_userpw:sha256(pass + email),
-                    mem_username:name,
                     mem_email:email,
                     mem_lastlogin_datetime:moment().format('YYYY-MM-DD HH:mm:ss'),
                     mem_lastlogin_timestamp:moment().unix()
@@ -70,32 +69,26 @@ class Test {
 // 아이디 수정
     async updateUser(userid, updateid){ 
         const result = await run_prisma(
-            prisma.rs_member.updateMany({
+            prisma.rs_member.update({
                 where:{
-                    mem_username:userid
+                    mem_userid:userid
                 },
                 data:{
-                    mem_username:updateid
+                    mem_userid:updateid
                 },
             })
         );
         if(result.successful === false){
             console.log(result);
             return MSG.onError(99999)
-        }else{
-            if(result.data.count === 0 ){
-                console.log(result);
-                return MSG.onError(99999)
-            }else {
-                console.log(result);
-                return MSG.onSuccess(200)
-            }
+        } else {
+            return MSG.onSuccess(200)
         }
     }
 // 관리자 권한 부여
     async setAdmin(email){
         const result = await run_prisma(
-            prisma.rs_member.updateMany({
+            prisma.rs_member.update({
                 where:{
                     mem_email:email
                 },
@@ -104,14 +97,11 @@ class Test {
                 }
             })
         );
-        if(result.successful ===true){
-            if(result.data.count === 0 ){
-                console.log(result);
-                return MSG.onError(99999)
-            }else {
-                console.log(result);
-                return MSG.onSuccess(200)
-            }
+        if(result.successful === false){
+            console.log(result);
+            return MSG.onError(99999)
+        } else {
+            return MSG.onSuccess(200)
         }
     }
     
@@ -188,7 +178,7 @@ class Test {
             console.log("-------", accessToken , refreshToken);
 // 로그인 성공시 최근 로그인기록 업데이트
             const result1 = await run_prisma(
-                prisma.rs_member.updateMany({
+                prisma.rs_member.update({
                     where:{
                         mem_idx:Number(mem_idx)
                     },
@@ -198,12 +188,10 @@ class Test {
                     }
                 })
             )
-            if(result1.successful ===true){
-                if(result1.data.count === 0 ){
-                    console.log(result1);
-                    return MSG.onError(99999)
-                }                                                                    4
-            }
+            if(result1.successful === false){
+                console.log(result1);
+                return MSG.onError(99999)
+            }                                                                    
 // 로그인 성공 시 토큰 저장 (refreshtoken)
             const result2 = await run_prisma(
             prisma.rs_mem_token.create({
@@ -224,11 +212,11 @@ class Test {
     }
 
 // 아이디 찾기
-    async findUser(username){
+    async findUser(userid){
         const result = await run_prisma(
             prisma.rs_member.findUnique({
                 where:{
-                    mem_username : username
+                    mem_userid : userid
                 }
             })
         )
@@ -245,7 +233,7 @@ class Test {
     // 로그인 실패시 카운트
     async failCount (mem_email){
         const result = await run_prisma(
-            prisma.rs_mem_login_log.updateMany({
+            prisma.rs_mem_login_log.update({
                 where:{
                     mll_email:mem_email 
                 },
@@ -256,14 +244,11 @@ class Test {
                 }
             })
         )
-        if(result.successful ===true){
-            if(result.data.count === 0 ){
-                console.log(result);
-                return MSG.onError(99999)
-            }else {
-                console.log(result);
-                return MSG.onSuccess(200)
-            }
+        if(result.successful === false){
+            console.log(result);
+            return MSG.onError(99999)
+        } else {
+            return MSG.onSuccess(200)
         }
     }
 
@@ -305,7 +290,12 @@ class Test {
                 }
             })
         )
-        return;
+        if(result.successful === false){
+            console.log(result);
+            return MSG.onError(99999)
+        } else {
+            return MSG.onSuccess(200)
+        }
     }
 
     // 1분뒤 저장된 인증번호 삭제
@@ -348,7 +338,7 @@ class Test {
     // 비밀번호 초기화 
     async resetPassword(auth_email){
         const result = await run_prisma(
-            prisma.rs_member.updateMany({
+            prisma.rs_member.update({
                 where:{
                     mem_email:auth_email
                 },
@@ -357,14 +347,11 @@ class Test {
                 }
             })
         )
-        if(result.successful ===true){
-            if(result.data.count === 0 ){
-                console.log(result);
-                return MSG.onError(99999)
-            }else {
-                console.log(result);
-                return MSG.onSuccess(200)
-            }
+        if(result.successful === false){
+            console.log(result);
+            return MSG.onError(99999)
+        } else {
+            return MSG.onSuccess(200)
         }
     }
     // 로그아웃(refresh token 삭제)
